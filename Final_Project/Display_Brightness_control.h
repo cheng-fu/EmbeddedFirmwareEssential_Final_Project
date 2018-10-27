@@ -110,6 +110,7 @@ void Display_Brightness_Controller::adjust_brightness(unint ALS_ch0_val) {
 }
 
 void Display_Brightness_Controller::turn_off_display() {
+	if(Display_Backlight_ctl == 0) return;
     while(cur_step > 0) {
     	display_timeout.detach();
     	cur_step = 0;
@@ -118,6 +119,7 @@ void Display_Brightness_Controller::turn_off_display() {
 }
 
 void Display_Brightness_Controller::turn_on_display() {
+	if(Display_Backlight_ctl > 0) return;
     while(cur_step > 0) {
         display_timeout.detach();
         cur_step = 0;
