@@ -66,7 +66,7 @@ void ALS_TSL2561::stop(){
 int ALS_TSL2561::stop_sensor(){
 	char config[2];
 	int err = 0;
-	// power up the sensor
+	// power down the sensor
 	config[0] = CMD_BLOCK_RW | TSL2561_CONTROL_REG;
 	config[1] = 0x00;
 	err = als_i2c.write(als_addr, config, 2);
