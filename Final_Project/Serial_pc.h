@@ -25,5 +25,6 @@ void reschedule_DisplayOff_TO(float TO);
 const float default_DisplayOff_TO = 20;
 volatile int display_state = 1;
 volatile int device_face_down = 0;
+volatile int device_was_facing_down = 0;
 
 #endif /* SERIAL_PC_H_ */
