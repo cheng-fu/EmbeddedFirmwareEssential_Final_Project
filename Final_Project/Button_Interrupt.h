@@ -10,6 +10,7 @@
 
 #include "mbed.h"
 #include "Serial_pc.h"
+#include "SystemPowerManagement.h"
 
 #define BUTTON_DEBUG_PRINT false
 
@@ -35,7 +36,7 @@ void button_ISR() {
 	but_int_cnt += 1;
 	green_led = !green_led;
 	Button::disable_IRQ();
-	if (!device_face_down) {
+	if (!device_face_down || is_system_asleep()) {
 	    reschedule_DisplayOff_TO(default_DisplayOff_TO);
 	}
 	button_tm.attach(&Button::enable_IRQ, button_TO);

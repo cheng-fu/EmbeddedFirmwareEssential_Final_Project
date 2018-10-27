@@ -10,6 +10,7 @@
 
 #include "mbed.h"
 #include "Serial_pc.h"
+#include "SystemPowerManagement.h"
 
 #define ACCEL_DEBUG_PRINT false
 
@@ -175,7 +176,7 @@ void accel_ISR_reenable_Callback(){
 void accel_shock_ISR() {
 	accel_int_cnt += 1;
 	red_led = ! red_led;
-	if (!device_face_down) {
+	if (!device_face_down || is_system_asleep()) {
 	    reschedule_DisplayOff_TO(default_DisplayOff_TO);
 	}
 	accel_INT1.rise(NULL);
