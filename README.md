@@ -1,5 +1,5 @@
 # EmbeddedFirmwareEssential_Final_Project
-This is a project Cheng Fu developed, the project performs power management tasks like, auto display brightness control, display on/off control, system sleep wake, on a ARM-Cortex M3 based NXP LPC1768 mbed board.
+This is an embedded system project developed by Cheng Fu. The project performs power management tasks like, auto display brightness control, display on/off control, system sleep wake, on an ARM Cortex-M3 based NXP LPC1768 mbed board.
 
 Peripheral devices used are Text LCD Display, ALS sensor, Accelerometer Sensor, Temperature Sensor, mutiple LEDs.
 
