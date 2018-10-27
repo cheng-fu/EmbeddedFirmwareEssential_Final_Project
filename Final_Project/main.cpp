@@ -15,10 +15,11 @@
 
 TextLCD lcd(p19, p20, p24, p23, p22, p21); // rs, e, d4-d7
 
-#define MAIN_LOG_ENABLE true
+#define MAIN_LOG_ENABLE false
 
 ALS_TSL2561 als_sensor;
 Accel_ADXL345 accel_sensor;
+TMP_102 temp_sensor;
 Display_Brightness_Controller display_brightness;
 Button button;
 
@@ -36,6 +37,7 @@ void reschedule_DisplayOff_TO(float TO) {
 }
 
 int16_t accel_data[3];
+float temp = 0.0;
 float x, y, z;
 
 int main()
@@ -45,17 +47,13 @@ int main()
 	pc.printf("\r\n=====================\r\n");
 	pc.printf("System starting...\r\n");
 	global_tm.start();
-	init_Temp102();
-	start_Temp102();
+	temp_sensor.start();
 	accel_sensor.start_accel_event_detection();
 	enable_IRQ();
 	DisplayOff_to.attach(&DisplayOff_Callback, default_DisplayOff_TO);
 	while(1)
 	{
-		wait_ms(100);
-		float temp = read_Temp102();
 		wait_ms(200);
-
 		// Read Accel data
 		accel_sensor.read_accel_data(accel_data);
 		x = accel_data[0] * accelSensitivity;	// x-axis acceleration in G's
@@ -78,6 +76,9 @@ int main()
 		// Check display state and print to Text LCD
 		if (display_state) {
 			als_sensor.start();
+			temp_sensor.start();
+			wait_ms(200);
+			temp = temp_sensor.read_data();
 			als_sensor.read_data(als_data);
 			display_brightness.adjust_brightness(als_data[0]);
 			wait_ms(100);
@@ -85,7 +86,9 @@ int main()
 			lcd.locate(0,0);
 			lcd.printf("T %.2f,x %+4.2f,y %+4.2f,z %+4.2f",temp, x, y, z);
 		} else {
+			wait_ms(200);
 			als_sensor.stop();
+			temp_sensor.stop();
 		}
 
 #if MAIN_LOG_ENABLE
