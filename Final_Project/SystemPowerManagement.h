@@ -32,9 +32,10 @@ void system_sleep(){
 
 	is_asleep = 1;
 	power_led = 0;
-	// Put system to deep sleep, set SLEEPONEXIT bit
+	// Set SLEEPONEXIT bit, allow system power gating when finish ISR execution
 	SYSTEM_CONTROL_REG |= 0x0002;
 	int sleep_starts_at = global_tm.read_ms();
+	// Put system to sleep
 	sleep();
 	sleep_cnt += 1;
 	last_sleep_duration = global_tm.read_ms() - sleep_starts_at;
@@ -42,8 +43,6 @@ void system_sleep(){
 };
 
 bool is_system_asleep() {
-	//uint32_t ret = SYSTEM_CONTROL_REG & 0x0010;
-	//return ret == 0;
 	return is_asleep == 1;
 };
 
