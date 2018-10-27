@@ -19,22 +19,55 @@ const float accelSensitivity = 0.0039;	// G's/LSB (per ADXL345 Datasheet)
 
 InterruptIn accel_INT1(p11);
 DigitalOut red_led(p5);
-uint16_t accel_int_cnt = 0;
-uint16_t int_src = 0;
 
-void disable_IRQ();
-void enable_IRQ();
 
-void check_error(int error, const char * error_str) {
+class Accel_ADXL345 {
+public:
+	Accel_ADXL345();
+	void stop();
+	void start();
+	void start_accel_event_detection();
+	//void stop_accel_event_detection();
+	void read_accel_data(int16_t * data_buffer);
+protected:
+	int init_sensor();
+	int stop_sensor();
+	void check_error(int error, const char * error_str);
+	bool sensor_active = false;
+};
+
+Accel_ADXL345::Accel_ADXL345(){
+	if (this->init_sensor() == 0) {
+		this->sensor_active = true;
+	}
+}
+
+void Accel_ADXL345::start(){
+	if (!this->sensor_active) {
+		if (this->init_sensor() == 0) {
+			this->sensor_active = true;
+		}
+	}
+}
+
+void Accel_ADXL345::stop(){
+	if (this->sensor_active) {
+		if (this->stop_sensor() == 0) {
+			this->sensor_active = false;
+		}
+	}
+}
+
+void Accel_ADXL345::check_error(int error, const char * error_str) {
 	if (error != 0) {
 		pc.printf("Error: %s\r\n", error_str);
 	}
 }
 
-void init_accel_Sensor(){
+int Accel_ADXL345::init_sensor(){
+	int err = 0;
 	// Initialize ADXL345
 	char config[2];
-	int err = 0;
 	config[0] = 0x31; // ADXL345 Data Format Register
 	config[1] = 0x0B; // format +/-16g, 0.003g/LSB
 	err = accel.write(accel_addr, config, 2);
@@ -43,9 +76,17 @@ void init_accel_Sensor(){
 	config[1] = 0x08;// Select measure mode
 	err = accel.write(accel_addr, config, 2);
 	check_error(err, "Failed to set measure mode");
+	return err;
 }
 
-void read_accel_data(int16_t * data_buffer){
+
+int Accel_ADXL345::stop_sensor(){
+	int err = 0;
+	//char config[2];
+	return err;
+}
+
+void Accel_ADXL345::read_accel_data(int16_t * data_buffer){
 	char buffer[6];
     // Read 6-byte data packet into a buffer
 	char base_addr = 0x32;
@@ -74,7 +115,7 @@ void read_accel_data(int16_t * data_buffer){
 #define ACT_Y_enable 0x20
 
 
-void init_accel_shock_detect_INT() {
+void Accel_ADXL345::start_accel_event_detection() {
 	/* Initialize accel shock detection interrupt */
 	char config[2];
 	int err = 0;
@@ -101,8 +142,20 @@ void init_accel_shock_detect_INT() {
 #endif
 }
 
+/*
+ * Accel interrupt management
+ * */
+
+uint16_t accel_int_cnt = 0;
+uint16_t int_src = 0;
+Timeout accel_ISR_reenable_TO;
+const float accel_ISR_disable_interval = 0.075;
+
+void accel_shock_ISR();
+
 char read_INT_SOURCE() {
-	// Executed in interrupt context
+	// read interrupt event source on accel ADXL345 clears out interrupt
+	// Runs in interrupt context
 	char addr = INT_SOURCE_addr;
 	char buffer[1];
 	int err = 0;
@@ -114,30 +167,25 @@ char read_INT_SOURCE() {
 	return buffer[0];
 }
 
-volatile int last_accel_int_ts = 0;
+void accel_ISR_reenable_Callback(){
+	read_INT_SOURCE();
+	accel_INT1.rise(&accel_shock_ISR);
+}
 
 void accel_shock_ISR() {
 	accel_int_cnt += 1;
-	int ts = global_tm.read_ms();
-
-
-	if(accel_int_cnt == 1) {
-	    red_led = !red_led;
-	    last_accel_int_ts = ts;
-		if (!device_face_down) {
-		    reschedule_DisplayOff_TO(default_DisplayOff_TO);
-		}
-	} else if ((ts - last_accel_int_ts) > 50) {
-		red_led = !red_led;
-		last_accel_int_ts = ts;
-		if (!device_face_down) {
-		    reschedule_DisplayOff_TO(default_DisplayOff_TO);
-		}
+	red_led = ! red_led;
+	if (!device_face_down) {
+	    reschedule_DisplayOff_TO(default_DisplayOff_TO);
 	}
+	accel_INT1.rise(NULL);
 	int_src = read_INT_SOURCE();
+	// Schedule re-enable ISR Timeout call back
+	accel_ISR_reenable_TO.attach(&accel_ISR_reenable_Callback, accel_ISR_disable_interval);
 }
 
 void disable_IRQ(){
+	accel_ISR_reenable_TO.detach();
 	accel_INT1.rise(NULL);
 	red_led = 0;
 };
@@ -145,7 +193,6 @@ void disable_IRQ(){
 void enable_IRQ() {
 	accel_int_cnt = 0;
 	red_led = 0;
-	last_accel_int_ts = 0;
 #if ACCEL_DEBUG_PRINT
 	pc.printf("accel_shock_detect int enabled\r\n");
 #endif
