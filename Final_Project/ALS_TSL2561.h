@@ -90,6 +90,7 @@ int ALS_TSL2561::init_sensor(){
 }
 
 int ALS_TSL2561::read_data(unint * buffer){
+	if (!this->sensor_active) return 0;
 	int err = 0;
 	char raw_data[4];
 	char data_low_addr = TSL2561_DATA0_LOW | CMD_BLOCK_RW;

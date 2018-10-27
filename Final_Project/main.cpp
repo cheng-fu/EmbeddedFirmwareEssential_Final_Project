@@ -24,14 +24,22 @@ Display_Brightness_Controller display_brightness;
 Button button;
 
 void DisplayOff_Callback(){
+	if(display_state == 1) {
+		als_sensor.stop();
+		temp_sensor.stop();
+	}
 	display_state = 0;
 	display_brightness.turn_off_display();
 }
 
 void reschedule_DisplayOff_TO(float TO) {
   DisplayOff_to.detach();
-  if(display_state == 0)
+  if(display_state == 0) {
 	  display_brightness.turn_on_display();
+	  als_sensor.start();
+	  temp_sensor.start();
+  }
+
   display_state = 1;
   DisplayOff_to.attach(&DisplayOff_Callback, TO);
 }
@@ -75,21 +83,15 @@ int main()
 
 		// Check display state and print to Text LCD
 		if (display_state) {
-			als_sensor.start();
-			temp_sensor.start();
-			wait_ms(200);
-			temp = temp_sensor.read_data();
+			float temp_data = temp_sensor.read_data();
+			if (temp_data > - 50.0) temp = temp_data;
 			als_sensor.read_data(als_data);
 			display_brightness.adjust_brightness(als_data[0]);
-			wait_ms(100);
 			lcd.cls();
 			lcd.locate(0,0);
 			lcd.printf("T %.2f,x %+4.2f,y %+4.2f,z %+4.2f",temp, x, y, z);
-		} else {
-			wait_ms(200);
-			als_sensor.stop();
-			temp_sensor.stop();
 		}
+		wait_ms(200);
 
 #if MAIN_LOG_ENABLE
 		pc.printf("Temp = %.3f deg C, x:  %+4.3f g, y:  %+4.3f g, z:  %+4.3f g\r\n",temp, x, y, z);

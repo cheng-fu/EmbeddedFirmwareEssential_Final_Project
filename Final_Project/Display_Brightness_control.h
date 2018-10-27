@@ -60,7 +60,8 @@ Display_Brightness_Controller::Display_Brightness_Controller() {
 void Display_Brightness_Controller::set_brightness(float val) {
 	if (val <= 0.0) {
 		val = 0.0;
-	} else if (val >= 1.0) {
+	}
+	if (val >= 1.0) {
 		val = 1.0;
 	}
 	// If a smoothed adjust in progress, ignore set brightness request
@@ -88,16 +89,23 @@ float Display_Brightness_Controller::get_brightness() {
 }
 
 void Display_Brightness_Controller::adjust_brightness(unint ALS_ch0_val) {
+	// Curve the ALS value to the brightness level
+	// using a 3 piece linear mapping
 	unint min = 15;
-	unint med = 300;
+	unint _33_percent = 125;
+	unint _66_percent = 600;
 	unint max = 1500;
 	float new_brightness = 0.0;
 	if (ALS_ch0_val == 0) return;
+	if (display_state == 0) return;
 	if (ALS_ch0_val <= min) ALS_ch0_val = min;
-	if (ALS_ch0_val < med)
-		new_brightness = 0.4 * (ALS_ch0_val - min) / (med - min) + 0.1;
+	if (ALS_ch0_val < _33_percent)
+		new_brightness = 0.3 * (ALS_ch0_val - min) / (_33_percent - min) + 0.1;
+	else if (ALS_ch0_val < _66_percent)
+		new_brightness = 0.3 * (ALS_ch0_val - _33_percent) / (_66_percent - _33_percent) + 0.4;
 	else
-		new_brightness = 0.5 * (ALS_ch0_val - med) / (max - med) + 0.5;
+		new_brightness = 0.3 * (ALS_ch0_val - _66_percent) / (max - _66_percent) + 0.7;
+
 	this->set_brightness(new_brightness);
 }
 

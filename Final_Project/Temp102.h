@@ -78,6 +78,7 @@ void TMP_102::stop(){
 }
 
 float TMP_102::read_data() {
+	if (!this->sensor_active) return -99.9;
 	char temp_read[2];
 	float temp;
 	tempsensor.read(this->i2c_addr, temp_read, 2);	// read the 2-byte temperature data
