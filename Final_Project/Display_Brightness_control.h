@@ -38,6 +38,8 @@ void schedule_TO(float TO) {
 		cur_step -= 1;
 	}
 }
+
+
 class Display_Brightness_Controller {
 public:
 	Display_Brightness_Controller();
